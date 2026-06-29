@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>健康ポイント | 田舎館村</title>
+
+<!-- LIFF SDK -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green:      #2d7a3a;
+  --green-light:#eaf3de;
+  --green-mid:  #97c459;
+  --green-dark: #1f5a29;
+  --amber-bg:   #faeeda;
+  --amber-text: #854f0b;
+  --blue-bg:    #e6f1fb;
+  --blue-text:  #185fa5;
+  --gray-bg:    #f5f5f3;
+  --gray-text:  #5f5e5a;
+  --border:     #e0dfd8;
+  --text:       #2c2c2a;
+  --text-muted: #888780;
+  --white:      #ffffff;
+  --radius:     10px;
+}
+body {
+  font-family: -apple-system, 'Hiragino Kana Gothic ProN', 'メイリオ', sans-serif;
+  background: var(--gray-bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100svh;
+}
+
+/* ---- ヘッダー ---- */
+.header {
+  background: var(--green);
+  color: #fff;
+  padding: 14px 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header-icon { font-size: 24px; }
+.header h1   { font-size: 17px; font-weight: 600; }
+.header p    { font-size: 12px; opacity: 0.85; }
+.back-btn {
+  background: none; border: none; color: #fff;
+  font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; gap: 4px; padding: 0;
+}
+
+/* ---- カード ---- */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin: 12px;
+  padding: 16px;
+}
+.card-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* ---- スタンプグリッド ---- */
+.stamp-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.stamp-slot {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  transition: transform 0.15s;
+}
+.stamp-slot.filled {
+  border: 2px solid var(--green);
+  background: var(--green-light);
+}
+.stamp-slot.filled .stamp-inner {
+  width: 78%;
+  height: 78%;
+  background: var(--green);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stamp-slot.filled .stamp-inner svg {
+  width: 52%;
+  height: 52%;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.stamp-slot.pending {
+  border: 2px dashed var(--green-mid);
+  background: #f5faf0;
+}
+
+/* ---- 進捗バー ---- */
+.progress-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.progress-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: right;
+}
+.stamp-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 6px;
+}
+
+/* ---- 引換バナー ---- */
+.reward-banner {
+  margin: 0 12px 4px;
+  background: var(--gray-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.reward-banner.active {
+  opacity: 1;
+  background: var(--green-light);
+  border-color: var(--green-mid);
+  cursor: pointer;
+}
+.reward-icon { font-size: 30px; flex-shrink: 0; }
+.reward-title { font-size: 14px; font-weight: 600; color: #27500a; }
+.reward-sub   { font-size: 12px; color: #3b6d11; }
+.reward-arrow { margin-left: auto; color: var(--green); font-size: 18px; }
+
+/* ---- セクションタイトル ---- */
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 14px 16px 6px;
+  letter-spacing: 0.05em;
+}
+
+/* ---- 申請リスト ---- */
+.apply-list { margin: 0 12px; display: flex; flex-direction: column; gap: 8px; }
+.apply-item {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s;
+}
+.apply-item:active { background: var(--gray-bg); }
+.apply-icon {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 20px;
+}
+.apply-icon.green  { background: var(--green-light); }
+.apply-icon.amber  { background: var(--amber-bg); }
+.apply-icon.blue   { background: var(--blue-bg); }
+.apply-text p      { font-size: 14px; font-weight: 500; }
+.apply-text span   { font-size: 12px; color: var(--text-muted); }
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  background: #fceaea;
+  color: #a32d2d;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  font-weight: 600;
+}
+.apply-chevron { margin-left: auto; color: var(--text-muted); font-size: 18px; }
+
+/* ---- フォーム ---- */
+.form-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; margin: 12px; padding: 16px; }
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 6px; }
+.form-required { color: #a32d2d; margin-left: 2px; }
+.form-select, .form-input, .form-textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-size: 15px;
+  background: var(--white);
+  color: var(--text);
+  font-family: inherit;
+  appearance: none;
+}
+.form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+.form-textarea { min-height: 88px; resize: none; }
+.form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* ---- 送信ボタン ---- */
+.submit-btn {
+  width: 100%;
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.submit-btn:active { background: var(--green-dark); }
+.submit-btn:disabled { background: var(--text-muted); cursor: not-allowed; }
+
+/* ---- 完了画面 ---- */
+.done-wrap { text-align: center; padding: 36px 16px; }
+.done-icon { font-size: 64px; margin-bottom: 12px; }
+.done-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+.done-body { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
+.done-appid { font-size: 12px; background: var(--gray-bg); border-radius: var(--radius); padding: 8px 12px; margin: 14px 0; color: var(--text-muted); }
+.outline-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 28px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 20px;
+}
+
+/* ---- 履歴 ---- */
+.history-item {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin: 0 12px 8px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.history-info { flex: 1; }
+.history-info p    { font-size: 14px; font-weight: 500; }
+.history-info span { font-size: 12px; color: var(--text-muted); }
+.status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.status-badge.pending  { background: var(--amber-bg); color: var(--amber-text); }
+.status-badge.approved { background: var(--green-light); color: #27500a; }
+.status-badge.rejected { background: #fceaea; color: #a32d2d; }
+
+/* ---- ナビゲーション ---- */
+.nav {
+  display: flex;
+  border-top: 1px solid var(--border);
+  background: var(--white);
+  position: sticky;
+  bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-btn {
+  flex: 1; padding: 10px 4px 8px;
+  border: none; background: none; cursor: pointer;
+  color: var(--text-muted); font-size: 10px; font-family: inherit;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.nav-btn svg { width: 24px; height: 24px; }
+.nav-btn.active { color: var(--green); }
+
+/* ---- 画面切替 ---- */
+.screen { display: none; }
+.screen.active { display: block; padding-bottom: 60px; }
+
+/* ---- ローディング ---- */
+#loading {
+  position: fixed; inset: 0;
+  background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px; z-index: 100;
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ローディング -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p style="font-size:14px;color:var(--text-muted);">読み込み中...</p>
+</div>
+
+<!-- ========== カード画面 ========== -->
+<div id="screen-card" class="screen">
+  <div class="header">
+    <span class="header-icon">💚</span>
+    <div>
+      <h1>健康ポイント</h1>
+      <p>田舎館村 令和7年度</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">スタンプカード</div>
+    <div class="stamp-grid" id="stampGrid"></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-label" id="progressLabel">0 / 5 ポイント</div>
+    <div class="stamp-note">特定健診の受診（必須）＋ポイント対象項目で貯められます</div>
+  </div>
+
+  <div id="rewardBanner" class="reward-banner">
+    <span class="reward-icon">🗑️</span>
+    <div>
+      <div class="reward-title">燃やせるごみ袋と交換</div>
+      <div class="reward-sub" id="rewardSub">5ポイントで交換できます</div>
+    </div>
+    <span class="reward-arrow" id="rewardArrow" style="display:none">›</span>
+  </div>
+
+  <div class="section-title">APPLY — 申請する</div>
+  <div class="apply-list">
+    <div class="apply-item" onclick="goApply('健診・検診')">
+      <div class="apply-icon green">🏥</div>
+      <div class="apply-text">
+        <p>健診・検診の受診<span class="badge">必須</span></p>
+        <span>特定健診・がん検診・脳ドックなど</span>
+      </div>
+      <span class="apply-chevron">›</span>
+    </div>
+    <div class="apply-item" onclick="goApply('健康づくりの取り組み')">
+      <div class="apply-icon amber">🚶</div>
+      <div class="apply-text">
+        <p>健康づくりの取り組み</p>
+        <span>ウォーキング・減塩・禁煙など（1か月以上）</span>
+      </div>
+      <span class="apply-chevron">›</span>
+    </div>
+    <div class="apply-item" onclick="goApply('イベント参加・献血')">
+      <div class="apply-icon blue">📅</div>
+      <div class="apply-text">
+        <p>イベント参加・献血</p>
+        <span>ウォーキング大会・収穫感謝祭・献血など</span>
+      </div>
+      <span class="apply-chevron">›</span>
+    </div>
+  </div>
+  <div style="height:8px"></div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="showScreen('card')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      カード
+    </button>
+    <button class="nav-btn" onclick="showScreen('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15,15"/></svg>
+      申請履歴
+    </button>
+  </div>
+</div>
+
+<!-- ========== 申請フォーム画面 ========== -->
+<div id="screen-apply" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('card')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      戻る
+    </button>
+    <div style="margin-left:6px">
+      <h1 id="applyTitle">申請フォーム</h1>
+      <p>内容を入力して送信してください</p>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-group">
+      <label class="form-label">申請の種類<span class="form-required">*</span></label>
+      <select class="form-select" id="applyType">
+        <optgroup label="健診・検診">
+          <option>特定健診・健康診査</option>
+          <option>がん検診（胃・大腸・肺）</option>
+          <option>がん検診（子宮頸がん・乳がん）</option>
+          <option>骨密度検診</option>
+          <option>脳ドック</option>
+          <option>職場健診・人間ドック（特定健診項目含む）</option>
+          <option>肝炎ウイルス検査・結核検診</option>
+          <option>健診結果説明会への参加</option>
+        </optgroup>
+        <optgroup label="健康づくりの取り組み">
+          <option>ウォーキング・スポーツ（1か月以上）</option>
+          <option>ラジオ体操（1か月以上）</option>
+          <option>野菜を増やす・減塩など食生活改善（1か月以上）</option>
+          <option>禁煙（1か月以上・もともと吸わない）</option>
+          <option>取り組みによる検査値改善</option>
+        </optgroup>
+        <optgroup label="イベント参加・その他">
+          <option>ウォーキングで健康づくり（食改主催）</option>
+          <option>収穫感謝祭（食改コーナー）</option>
+          <option>健診受診勧奨の標語</option>
+          <option>献血</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">受診日 / 取り組み開始日<span class="form-required">*</span></label>
+      <input type="date" class="form-input" id="applyDate">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">補足・コメント（任意）</label>
+      <textarea class="form-textarea" id="applyComment" placeholder="例：村の集団健診で受診しました　／　6月からウォーキングを毎日続けています"></textarea>
+      <div class="form-hint">※証明書類（結果票など）は、ごみ袋引き換え時に窓口へご持参ください</div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitApply()">申請を送信する</button>
+  </div>
+</div>
+
+<!-- ========== 完了画面 ========== -->
+<div id="screen-done" class="screen">
+  <div class="header">
+    <div>
+      <h1>申請完了</h1>
+      <p>受け付けました</p>
+    </div>
+  </div>
+  <div class="card done-wrap">
+    <div class="done-icon">✅</div>
+    <div class="done-title">申請が完了しました</div>
+    <div class="done-body">厚生課が内容を確認後、承認されるとスタンプが押印されLINEでお知らせします。</div>
+    <div class="done-appid" id="doneAppId">申請ID：-</div>
+    <div class="done-body" style="font-size:13px">通常2〜3営業日程度かかります。<br>証明書類は<strong>ごみ袋引き換え時に窓口へご持参</strong>ください。</div>
+    <button class="outline-btn" onclick="showScreen('card')">カードに戻る</button>
+  </div>
+</div>
+
+<!-- ========== 申請履歴画面 ========== -->
+<div id="screen-history" class="screen">
+  <div class="header">
+    <div>
+      <h1>申請履歴</h1>
+      <p>これまでの申請状況</p>
+    </div>
+  </div>
+  <div style="height:10px"></div>
+  <div id="historyList">
+    <p style="text-align:center;color:var(--text-muted);font-size:14px;padding:32px">申請履歴がありません</p>
+  </div>
+  <div class="nav">
+    <button class="nav-btn" onclick="showScreen('card')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      カード
+    </button>
+    <button class="nav-btn active" onclick="showScreen('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15,15"/></svg>
+      申請履歴
+    </button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  設定（デプロイ後に書き換える）
+// ============================================================
+const LIFF_ID  = '2010127755-CZcjeNaE';       // LIFF ID
+const GAS_URL  = 'https://script.google.com/macros/s/AKfycbzi2pOc_mhqlUD23PTcwNI22oVHay4b5lCc_RlkFeO_ojtbR6lWvDOA30FW6V3vNhpN/exec'; // GAS WebアプリのURL
+
+// ============================================================
+//  アプリの状態
+// ============================================================
+let state = {
+  lineUid:     '',
+  displayName: '',
+  stampCount:  0,
+  stamps:      [],
+  bagExchanged: false,
+  history:     []  // ローカル保存（セッション中のみ）
+};
+
+// ============================================================
+//  初期化
+// ============================================================
+async function init() {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+
+    const profile    = await liff.getProfile();
+    state.lineUid    = profile.userId;
+    state.displayName = profile.displayName;
+
+    await loadCard();
+    renderCard();
+    document.getElementById('loading').style.display = 'none';
+    showScreen('card');
+  } catch (err) {
+    console.error(err);
+    document.getElementById('loading').innerHTML =
+      `<p style="color:#a32d2d;font-size:14px;padding:24px">読み込みに失敗しました。<br>LINEアプリから再度開いてください。</p>`;
+  }
+}
+
+// ============================================================
+//  カード情報をGASから取得
+// ============================================================
+async function loadCard() {
+  try {
+    const res  = await fetch(`${GAS_URL}?action=card&lineUid=${state.lineUid}`);
+    const data = await res.json();
+    if (data.ok) {
+      state.stampCount  = data.stampCount;
+      state.stamps      = data.stamps || [];
+      state.bagExchanged = data.bagExchanged;
+    }
+  } catch (err) {
+    console.error('カード取得エラー', err);
+  }
+}
+
+// ============================================================
+//  スタンプカードを描画
+// ============================================================
+function renderCard() {
+  const grid = document.getElementById('stampGrid');
+  grid.innerHTML = '';
+
+  for (let i = 0; i < 5; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'stamp-slot';
+    if (i < state.stampCount) {
+      slot.classList.add('filled');
+      const inner = document.createElement('div');
+      inner.className = 'stamp-inner';
+      inner.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"/></svg>`;
+      slot.appendChild(inner);
+    } else {
+      slot.textContent = i + 1;
+    }
+    grid.appendChild(slot);
+  }
+
+  const pct = Math.round((state.stampCount / 5) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent =
+    `${state.stampCount} / 5 ポイント`;
+
+  const banner = document.getElementById('rewardBanner');
+  const sub    = document.getElementById('rewardSub');
+  const arrow  = document.getElementById('rewardArrow');
+
+  if (state.stampCount >= 5 && !state.bagExchanged) {
+    banner.classList.add('active');
+    sub.textContent = '交換できます！厚生課窓口へお越しください';
+    arrow.style.display = 'inline';
+  } else if (state.bagExchanged) {
+    sub.textContent = '今年度の引き換えは完了しています';
+  } else {
+    banner.classList.remove('active');
+    sub.textContent = `あと ${5 - state.stampCount} ポイントで交換できます`;
+    arrow.style.display = 'none';
+  }
+}
+
+// ============================================================
+//  画面切替
+// ============================================================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+
+  if (name === 'history') renderHistory();
+}
+
+// ============================================================
+//  申請フォームへ遷移
+// ============================================================
+function goApply(title) {
+  document.getElementById('applyTitle').textContent = title;
+  // 申請種別を初期選択
+  const sel = document.getElementById('applyType');
+  if (title === '健診・検診') sel.selectedIndex = 0;
+  else if (title === '健康づくりの取り組み') sel.selectedIndex = 8;
+  else sel.selectedIndex = 14;
+  showScreen('apply');
+}
+
+// ============================================================
+//  申請送信
+// ============================================================
+async function submitApply() {
+  const type    = document.getElementById('applyType').value;
+  const date    = document.getElementById('applyDate').value;
+  const comment = document.getElementById('applyComment').value;
+
+  if (!date) { alert('受診日 / 取り組み開始日を入力してください'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  try {
+    const res  = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action:      'apply',
+        lineUid:     state.lineUid,
+        displayName: state.displayName,
+        type,
+        targetDate:  date,
+        comment
+      })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      // 履歴に追加（ローカル）
+      state.history.unshift({ type, date, status: '審査中', appId: data.appId });
+      document.getElementById('doneAppId').textContent = `申請ID：${data.appId}`;
+      showScreen('done');
+    } else {
+      alert('送信に失敗しました。しばらく経ってから再度お試しください。');
+    }
+  } catch (err) {
+    alert('通信エラーが発生しました。\n' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '申請を送信する';
+  }
+}
+
+// ============================================================
+//  申請履歴を描画（ローカル保存分）
+// ============================================================
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (state.history.length === 0) {
+    list.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:14px;padding:32px">申請履歴がありません</p>';
+    return;
+  }
+  list.innerHTML = state.history.map(h => `
+    <div class="history-item">
+      <div style="flex:1">
+        <p style="font-size:14px;font-weight:500">${h.type}</p>
+        <span style="font-size:12px;color:var(--text-muted)">${h.date}申請</span>
+      </div>
+      <span class="status-badge ${h.status === '承認済み' ? 'approved' : 'pending'}">
+        ${h.status}
+      </span>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+//  起動
+// ============================================================
+init();
+</script>
+</body>
+</html>
